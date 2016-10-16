@@ -1,3 +1,13 @@
+void drawMesh(){
+  imageMode(CORNER);
+  noTint();
+  image(meshBackground, 0, 0);
+  //Draw street side mesh mirrored since we look at it from the other direction
+  scale(-1,1);
+  image(meshBackground, -meshBackground.width*2-10, 0);
+  scale(-1,1); 
+}
+
 void setupGUI(){
   cp5 = new ControlP5(this);
   

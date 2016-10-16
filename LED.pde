@@ -10,8 +10,6 @@ class LED{
   }
   
   void draw(){
-    stroke(0,255,0);
-    point(posX,posY);
     imageMode(CENTER);
     tint(c);
     image(LED_Sprite, posX, posY);
