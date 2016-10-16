@@ -14,9 +14,20 @@ void setupGUI(){
       .setSize(GUI_WIDTH/2-1, BUTTON_HEIGHT-1)
       .setMode(ControlP5.SWITCH)
       .getCaptionLabel().setText("Show Mesh");
+      
+  cp5.addToggle("showSegments")
+      .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*4)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setMode(ControlP5.SWITCH)
+      .getCaptionLabel().setText("Show Segments");
+      
+  cp5.addToggle("showLeds")
+      .setPosition(width-GUI_WIDTH/2, BUTTON_HEIGHT*4)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setMode(ControlP5.SWITCH)
+      .getCaptionLabel().setText("Show LEDs");
 }
 
 void modeBar(int n){
   editMode = n;
-  println(editMode);
 }

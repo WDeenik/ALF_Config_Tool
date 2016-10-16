@@ -7,31 +7,38 @@ class Segment{
   Segment[] endNeighbours = new Segment[2];
   LED[] leds;
   
-  Segment(int startX, int startY, int endX, int endY, int ledN){
+  Segment(int startX, int startY, int endX, int endY, int ln){
     this.startX = startX;
     this.startY = startY;
     this.endX = endX;
     this.endY = endY;
     
     //Calculate ledN automatically if it is set to 0
-    if(ledN == 0){
+    if(ln == 0){
       float d = dist(startX, startY, endX, endY)*(float)HEIGHT/height;
       ledN = floor(d/LED_PITCH);
     }
-    else this.ledN = ledN;
+    else ledN = ln;
     
     leds = new LED[ledN];
     for(int i = 0; i < ledN; i++){
       int x = (int)lerp(startX, endX, 1.0/(2*ledN)+(float)i/ledN);
       int y = (int)lerp(startY, endY, 1.0/(2*ledN)+(float)i/ledN);
       leds[i] = new LED(x, y);
-      leds[i].setColor(floor(random(256)), floor(random(256)), floor(random(256)));
+      leds[i].setColor(255, 255, 255, 255);
     }
   }
   
   void draw(){
-    for(int i = 0; i<ledN; i++){
-      leds[i].draw();
+    if(showSegments){
+      stroke(255,0,0);
+      strokeWeight(2);
+      line(startX,startY,endX,endY);
+    }
+    if(showLeds){
+      for(int i = 0; i<ledN; i++){
+        leds[i].draw();
+      }
     }
   }
   

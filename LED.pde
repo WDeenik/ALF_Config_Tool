@@ -10,15 +10,15 @@ class LED{
   }
   
   void draw(){
-    //stroke(0,255,0);
-    //point(posX,posY);
+    stroke(0,255,0);
+    point(posX,posY);
     imageMode(CENTER);
-    tint(c, 128);
+    tint(c);
     image(LED_Sprite, posX, posY);
   }
   
-  void setColor(int r, int g, int b){
-    c = color(r,g,b);
+  void setColor(int r, int g, int b, int a){
+    c = color(r,g,b,a);
   }
   
   void setColor(color c){

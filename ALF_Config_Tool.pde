@@ -8,10 +8,13 @@ ControlP5 cp5;
 int editMode = 0;
 static final int GUI_WIDTH = 180;    //Width of GUI bar
 static final int BUTTON_HEIGHT = 20; //Height of GUI buttons
+boolean showMesh = true;
+boolean showSegments = true;
+boolean showLeds = true;
 
 //Mesh
 PImage meshBackground;
-boolean showMesh = true;
+
 
 //Segments
 static final int NEIGHBOUR_DIST = 5;  //Distance in which segments will auto-detect neighbours
@@ -53,8 +56,13 @@ void draw(){
   text("Water side", meshBackground.width/2, 20);
   text("Street side", meshBackground.width*1.5+10, 20);
   
+  for(Segment s : segments){
+    s.draw();
+  }
+  
   if(mousePressed && editMode == 0){
-    stroke(0,255,255);
+    stroke(255,0,0);
+    strokeWeight(2);
     line(startX, startY, mouseX, mouseY);
   }
 }
@@ -63,5 +71,11 @@ void mousePressed(){
   if(editMode == 0){
     startX = mouseX;
     startY = mouseY;
+  }
+}
+
+void mouseReleased(){
+  if(editMode == 0){
+    segments.add(new Segment(startX, startY, mouseX, mouseY, 0));
   }
 }
