@@ -7,6 +7,7 @@ class Segment{
   Segment[] endNeighbours = new Segment[2];
   LED[] leds;
   boolean selected = false;
+  boolean highlight = false;
   color c;
   
   //For calculating distance to this segment
@@ -41,10 +42,17 @@ class Segment{
     sa = dy/d; // sine 
   }
   
-  void draw(){
-    if(selected) c = color(255,255,0);
+  void update(){
+    if(highlight){ 
+      c = color(0,255,255);
+      highlight = false; //Needs to be activated each frame (ugly but makes other code much easier)
+    }
+    else if(selected) c = color(255,255,0);
     else if(mouseHover()) c = color(255,128,128);
-    
+    else c = color(255,0,0);
+  }
+  
+  void draw(){
     if(showSegments){
       stroke(c);
       strokeWeight(2);
@@ -56,21 +64,39 @@ class Segment{
         leds[i].draw();
       }
     }
-    c = color(255,0,0);
   }
   
-  //Invoked by another segment when it detect this is probably one of its neighbours
+  //Invoked by another segment when it detects this is probably one of its neighbours
   void addNeighbour(Segment neighbour, int place){
     if(place == 1){
       if(startNeighbours[0] == null) startNeighbours[0] = neighbour;
       else if(startNeighbours[1] == null) startNeighbours[1] = neighbour;
-      else println("This segment already has two neighbours at its start");
+      else println("Segment "+segments.indexOf(this)+" already has two neighbours at its start");
     }
     else{
       if(endNeighbours[0] == null) endNeighbours[0] = neighbour;
       else if(endNeighbours[1] == null) endNeighbours[1] = neighbour;
-      else println("This segment already has two neighbours at its end");
+      else println("Segment "+segments.indexOf(this)+" already has two neighbours at its end");
     }
+  }
+  
+  void removeNeighbour(Segment neighbour){
+    boolean found = false;
+    for(int i = 0; i < 4; i++){
+      if(i < 2){
+        if(startNeighbours[i] == neighbour){ 
+          startNeighbours[i] = null;
+          found = true;
+        }
+      }
+      else{
+        if(endNeighbours[i] == neighbour){ 
+          endNeighbours[i] = null;
+          found = true;
+        }
+      }
+    }
+    if(!found) println("Cannot delete neighbour, not found");
   }
   
   //Returns if a potential start/end position can be a neighbour of this segment
@@ -96,11 +122,28 @@ class Segment{
     else return false;
   }
   
+  void highLight(){
+    highlight = true;
+  }
+  
   float getDistance(float x, float y){
     float mx = (-startX+x)*ca + (-startY+y)*sa;
     
     if(mx <= 0) return dist(x,y,startX,startY);
     else if(mx >= d) return dist(x,y,endX,endY);
     else return dist(x, y, startX+mx*ca, startY+mx*sa);
+  }
+  
+  //Deletes this segment
+  void delete(){
+    segments.remove(this);
+    for(int i = 0; i<4; i++){
+      if(i < 2){
+        if(startNeighbours[i] != null) startNeighbours[i].removeNeighbour(this);
+      }
+      else{
+        if(endNeighbours[i-2] != null) endNeighbours[i-2].removeNeighbour(this);
+      }
+    }
   }
 }
