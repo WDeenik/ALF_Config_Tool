@@ -20,7 +20,7 @@ Bang bang_nbs1, bang_nbs2, bang_nbe1, bang_nbe2, bang_nextData;
 PImage meshBackground;
 
 //Segments
-static final int NEIGHBOUR_DIST = 5;  //Distance in which segments will auto-detect neighbours
+static final int NEIGHBOUR_DIST = 2;  //Distance in which segments will auto-detect neighbours
 ArrayList<Segment> segments = new ArrayList<Segment>();
 int startX, startY;
 
@@ -37,6 +37,27 @@ void setup(){
   LED_Sprite.resize(LED_SIZE, LED_SIZE);
   
   setupGUI();
+  
+  //Read edges from file
+  BufferedReader r = createReader("edges.txt");
+  String line = "";
+  while(true){
+      try {
+        line = r.readLine();
+      } catch (IOException e) {
+        e.printStackTrace();
+        line = null;
+      }
+      if(line == null) break;
+      String[] coords = split(line, ' ');
+      Segment s = new Segment( round(float(coords[0])),
+                               round(float(coords[1])),
+                               round(float(coords[2])),
+                               round(float(coords[3])),
+                               0);
+      segments.add(s);
+      s.autoFindNeighbours();
+  }
 }
 
 void draw(){
@@ -51,14 +72,14 @@ void draw(){
   
   //Draw segments & connections to possible neighbours from mouse position
   for(Segment s : segments){
-    int n = s.getPossibleNeighbour(mouseX,mouseY);
+    /*int n = s.getPossibleNeighbour(mouseX,mouseY);
     if(n > 0){
       s.highLight();
       stroke(255);
       strokeWeight(1);
       if(n == 1) line(mouseX,mouseY,s.startX,s.startY);
       else line(mouseX,mouseY,s.endX, s.endY);
-    }
+    }*/
     s.update();
     s.draw();
   }
@@ -66,20 +87,20 @@ void draw(){
   updateGUI();
   
   //Draw the proposed edge
-  if(mousePressed && editMode == 0){
+  /*if(mousePressed && editMode == 0){
     stroke(255,0,0);
     strokeWeight(2);
     line(startX, startY, mouseX, mouseY);
-  }
+  }*/
 }
 
 void mousePressed(){
-  if(mouseX < width-GUI_WIDTH){
+  /*if(mouseX < width-GUI_WIDTH){
     if(editMode == 0){
       startX = mouseX;
       startY = mouseY;
     }
-  }
+  }*/
 }
 
 void mouseReleased(){
@@ -97,26 +118,12 @@ void mouseReleased(){
     }
     
     //Make new segment if we are in segment mode
-    if(editMode == 0 && !(mouseX == startX && mouseY == startY)){
+    /*if(editMode == 0 && !(mouseX == startX && mouseY == startY)){
       Segment ns = new Segment(startX, startY, mouseX, mouseY, 0);
       segments.add(ns);
       selectSegment(ns);
-      for(int i = 0; i<segments.size()-1; i++){
-        Segment s = segments.get(i);
-        int n = s.getPossibleNeighbour(startX,startY);
-        if(n > 0){
-          s.addNeighbour(ns, n);
-          ns.addNeighbour(s, 1);
-        }
-        else{
-          n = s.getPossibleNeighbour(mouseX,mouseY);
-          if(n > 0){
-            s.addNeighbour(ns, n);
-            ns.addNeighbour(s, 2);
-          }
-        }
-      }
-    }
+      ns.autoFindNeighbours();
+    }*/
   }
 }
 

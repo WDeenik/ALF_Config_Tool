@@ -7,8 +7,12 @@ class Segment{
   Segment[] endNeighbours = new Segment[2];
   LED[] leds;
   boolean selected = false;
-  boolean highlight = false;
   color c;
+  color col_sel = #FFFF00;  //yellow
+  color col_nb = #00FFFF;   //cyan
+  color col_data = #00FF00; //green
+  color col_norm = #FF0000; //red
+  color col_hov = #FFBBBB;   //light red
   
   //For calculating distance to this segment
   float d, ca, sa;
@@ -43,13 +47,15 @@ class Segment{
   }
   
   void update(){
-    if(highlight){ 
-      c = color(0,255,255);
-      highlight = false; //Needs to be activated each frame (ugly but makes other code much easier)
+    if(selected){ 
+      c = color(255,255,0);
+      if(startNeighbours[0] != null) startNeighbours[0].setColor(col_nb);
+      if(startNeighbours[1] != null) startNeighbours[1].setColor(col_nb);
+      if(endNeighbours[0] != null) endNeighbours[0].setColor(col_nb);
+      if(endNeighbours[1] != null) endNeighbours[1].setColor(col_nb);
     }
-    else if(selected) c = color(255,255,0);
-    else if(mouseHover()) c = color(255,128,128);
-    else c = color(255,0,0);
+    else if(mouseHover()) c = col_hov;
+    else c = col_norm;
   }
   
   void draw(){
@@ -77,6 +83,26 @@ class Segment{
       if(endNeighbours[0] == null) endNeighbours[0] = neighbour;
       else if(endNeighbours[1] == null) endNeighbours[1] = neighbour;
       else println("Segment "+segments.indexOf(this)+" already has two neighbours at its end");
+    }
+  }
+  
+  void autoFindNeighbours(){
+    for(int i = 0; i<segments.size(); i++){
+      Segment s = segments.get(i);
+      if(s != this){
+        int n = s.getPossibleNeighbour(startX,startY);
+        if(n > 0){
+          s.addNeighbour(this, n);
+          addNeighbour(s, 1);
+        }
+        else{
+          n = s.getPossibleNeighbour(endX,endY);
+          if(n > 0){
+            s.addNeighbour(this, n);
+            addNeighbour(s, 2);
+          }
+        }
+      }
     }
   }
   
@@ -122,8 +148,8 @@ class Segment{
     else return false;
   }
   
-  void highLight(){
-    highlight = true;
+  void setColor(color col){
+    c = col;
   }
   
   float getDistance(float x, float y){
