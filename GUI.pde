@@ -8,43 +8,8 @@ void drawMesh(){
   scale(-1,1); 
 }
 
-//Updates GUI (highlighting segments when hover over bangs and other stuff like that)
-void updateGUI(){
-  if(selectedSegment != null){
-    segment_ledN.setText("LED no: "+selectedSegment.ledN);
-    updateSegmentBang(bang_nbs1, selectedSegment.startNeighbours[0]);
-  }
-}
-
-void updateSegmentBang(Bang b, Segment target){
-  if(target != null){
-    b.setLock(false);
-    if(b.isInside()){
-      if(mousePressed && mouseButton == LEFT){ 
-        selectSegment(target);
-        delay(100); //Prevent that we immediately switch back
-      }
-      else if(mousePressed && mouseButton == RIGHT){
-        selectedSegment.removeNeighbour(target);
-        target.removeNeighbour(selectedSegment);
-        delay(100);
-      }
-      target.highLight();
-    }
-  }
-  else b.setLock(true);
-}
-
 void setupGUI(){
   cp5 = new ControlP5(this);
-  
-  cp5.addButtonBar("modeBar")
-      .setPosition(width-GUI_WIDTH, 0)
-      .setSize(GUI_WIDTH, BUTTON_HEIGHT-1)
-      .addItems(split("Segments Data"," "))
-      .setCaptionLabel("Edit mode")
-      .setValue(0)
-      ;
   
   cp5.addToggle("showMesh")
       .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*2)
@@ -64,23 +29,33 @@ void setupGUI(){
       .setMode(ControlP5.SWITCH)
       .setCaptionLabel("Show LEDs");
       
+  cp5.addToggle("showNeighbours")
+      .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*6)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setMode(ControlP5.SWITCH)
+      .setCaptionLabel("Show Neighbours");
+      
   segmentInfo = cp5.addGroup("segmentInfo")
     .setPosition(width-GUI_WIDTH, height-BUTTON_HEIGHT*10)
     .hideBar()
     .setVisible(false);
     
-  segment_ledN = cp5.addTextlabel("segment_ledN")
+  /*segment_ledN = cp5.addTextlabel("segment_ledN")
     .setText("LED no: ")
     .setPosition(0,0)
-    .setGroup(segmentInfo);
-  
-  bang_nbs1 = cp5.addBang("bang_nbs1")
-    .setPosition(0,BUTTON_HEIGHT)
+    .setGroup(segmentInfo);*/
+    
+  ledN_slider = cp5.addSlider("ledN")
+    .setPosition(0,0)
     .setGroup(segmentInfo)
-    .setCaptionLabel("Neighbour1")
-    .setLock(true);
+    .setRange(0,10)
+    .setNumberOfTickMarks(11)
+    .setCaptionLabel("LED Number")
+    ;
+    
+  //TODO: Bang button to flip an edge (important for dataflow)
 }
 
-void modeBar(int n){
-  editMode = n;
+void ledN(float n){
+  if(selectedSegment != null) selectedSegment.updateLEDs(round(n));
 }

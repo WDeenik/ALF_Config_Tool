@@ -30,13 +30,7 @@ class Segment{
     }
     else ledN = ln;
     
-    leds = new LED[ledN];
-    for(int i = 0; i < ledN; i++){
-      int x = (int)lerp(startX, endX, 1.0/(2*ledN)+(float)i/ledN);
-      int y = (int)lerp(startY, endY, 1.0/(2*ledN)+(float)i/ledN);
-      leds[i] = new LED(x, y);
-      leds[i].setColor(255, 255, 255, 255);
-    }
+    updateLEDs(ledN);
     
     //For calculating distance to this line
     float dx = endX - startX; 
@@ -49,13 +43,14 @@ class Segment{
   void update(){
     if(selected){ 
       c = color(255,255,0);
-      if(startNeighbours[0] != null) startNeighbours[0].setColor(col_nb);
-      if(startNeighbours[1] != null) startNeighbours[1].setColor(col_nb);
-      if(endNeighbours[0] != null) endNeighbours[0].setColor(col_nb);
-      if(endNeighbours[1] != null) endNeighbours[1].setColor(col_nb);
+      if(showNeighbours){
+        if(startNeighbours[0] != null) startNeighbours[0].setColor(col_nb);
+        if(startNeighbours[1] != null) startNeighbours[1].setColor(col_nb);
+        if(endNeighbours[0] != null) endNeighbours[0].setColor(col_nb);
+        if(endNeighbours[1] != null) endNeighbours[1].setColor(col_nb);
+      }
     }
     else if(mouseHover()) c = col_hov;
-    else c = col_norm;
   }
   
   void draw(){
@@ -65,14 +60,25 @@ class Segment{
       line(startX,startY,endX,endY);
     }
     
+    //Show start/end position if selected
+    if(selected){
+      noStroke();
+      fill(0,255,0);
+      ellipse(startX,startY,5,5);
+      fill(255,0,0);
+      ellipse(endX,endY,5,5);
+    }
+    
     if(showLeds){
       for(int i = 0; i<ledN; i++){
         leds[i].draw();
       }
     }
+    
+    c = col_norm;
   }
   
-  //Invoked by another segment when it detects this is probably one of its neighbours
+  //Adds a neighbour to the proper place or gives an error message if it is already full
   void addNeighbour(Segment neighbour, int place){
     if(place == 1){
       if(startNeighbours[0] == null) startNeighbours[0] = neighbour;
@@ -86,6 +92,7 @@ class Segment{
     }
   }
   
+  //This finds and adds the neighbours around this segment
   void autoFindNeighbours(){
     for(int i = 0; i<segments.size(); i++){
       Segment s = segments.get(i);
@@ -106,6 +113,7 @@ class Segment{
     }
   }
   
+  //Finds and removes a neighbour and gives an error message if the neighbour is not found
   void removeNeighbour(Segment neighbour){
     boolean found = false;
     for(int i = 0; i < 4; i++){
@@ -116,8 +124,8 @@ class Segment{
         }
       }
       else{
-        if(endNeighbours[i] == neighbour){ 
-          endNeighbours[i] = null;
+        if(endNeighbours[i-2] == neighbour){ 
+          endNeighbours[i-2] = null;
           found = true;
         }
       }
@@ -160,9 +168,21 @@ class Segment{
     else return dist(x, y, startX+mx*ca, startY+mx*sa);
   }
   
+  void updateLEDs(int ledn){
+    ledN = ledn;
+    leds = new LED[ledN];
+    for(int i = 0; i < ledN; i++){
+      int x = (int)lerp(startX, endX, 1.0/(2*ledN)+(float)i/ledN);
+      int y = (int)lerp(startY, endY, 1.0/(2*ledN)+(float)i/ledN);
+      leds[i] = new LED(x, y);
+      leds[i].setColor(255, 255, 255, 255);
+    }
+  }
+  
   //Deletes this segment
   void delete(){
     segments.remove(this);
+    selectedSegment = null;
     for(int i = 0; i<4; i++){
       if(i < 2){
         if(startNeighbours[i] != null) startNeighbours[i].removeNeighbour(this);

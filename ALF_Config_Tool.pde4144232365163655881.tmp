@@ -5,16 +5,16 @@ static final int HEIGHT = 6000;  //Real life height in mm
 
 //GUI
 ControlP5 cp5;
-//int editMode = 0;
+int editMode = 0;
 static final int GUI_WIDTH = 180;    //Width of GUI bar
 static final int BUTTON_HEIGHT = 20; //Height of GUI buttons
 boolean showMesh = true;
 boolean showSegments = true;
 boolean showLeds = false;
-boolean showNeighbours = true;
 Segment selectedSegment;
 Group segmentInfo;
 Slider ledN_slider;
+Bang bang_nbs1, bang_nbs2, bang_nbe1, bang_nbe2, bang_nextData;
 
 //Mesh
 PImage meshBackground;
@@ -50,29 +50,13 @@ void setup(){
       }
       if(line == null) break;
       String[] coords = split(line, ' ');
-      Integer[] coordsPixel = new Integer[4];
-      for(int i = 0; i<4; i++){
-        coordsPixel[i] = round(float(coords[i])/((float)HEIGHT/height));
-      }
-      Segment s = new Segment( coordsPixel[0],
-                               coordsPixel[1],
-                               coordsPixel[2],
-                               coordsPixel[3],
+      Segment s = new Segment( round(float(coords[0])),
+                               round(float(coords[1])),
+                               round(float(coords[2])),
+                               round(float(coords[3])),
                                0);
-                               
       segments.add(s);
       s.autoFindNeighbours();
-      
-      //Uncomment if we use a file with just one side of edges (this will be mirrored)
-      
-      /*Segment sm = new Segment (-coordsPixel[0]+2*600+10,
-                                coordsPixel[1],
-                                -coordsPixel[2]+2*600+10,
-                                coordsPixel[3],
-                                0);
-      segments.add(sm);
-      sm.autoFindNeighbours();*/
-       
   }
 }
 
@@ -88,12 +72,35 @@ void draw(){
   
   //Draw segments & connections to possible neighbours from mouse position
   for(Segment s : segments){
+    /*int n = s.getPossibleNeighbour(mouseX,mouseY);
+    if(n > 0){
+      s.highLight();
+      stroke(255);
+      strokeWeight(1);
+      if(n == 1) line(mouseX,mouseY,s.startX,s.startY);
+      else line(mouseX,mouseY,s.endX, s.endY);
+    }*/
     s.update();
     s.draw();
   }
+  
+  updateGUI();
+  
+  //Draw the proposed edge
+  /*if(mousePressed && editMode == 0){
+    stroke(255,0,0);
+    strokeWeight(2);
+    line(startX, startY, mouseX, mouseY);
+  }*/
 }
 
 void mousePressed(){
+  /*if(mouseX < width-GUI_WIDTH){
+    if(editMode == 0){
+      startX = mouseX;
+      startY = mouseY;
+    }
+  }*/
 }
 
 void mouseReleased(){
@@ -109,6 +116,14 @@ void mouseReleased(){
     if(!onSegment){ 
       selectSegment(null);
     }
+    
+    //Make new segment if we are in segment mode
+    /*if(editMode == 0 && !(mouseX == startX && mouseY == startY)){
+      Segment ns = new Segment(startX, startY, mouseX, mouseY, 0);
+      segments.add(ns);
+      selectSegment(ns);
+      ns.autoFindNeighbours();
+    }*/
   }
 }
 
@@ -119,37 +134,14 @@ void keyPressed(){
       selectedSegment = null;
     }
   }
-  
-  if(key == 's'){
-    //Save edges to file
-    println("Writing edges to file...");
-    PrintWriter out = createWriter("data/edges.txt");
-    for(int i = 0; i<segments.size(); i++){
-      Segment s = segments.get(i);
-      float sx, sy, ex, ey;
-      sx = s.startX*((float)HEIGHT/height);
-      sy = s.startY*((float)HEIGHT/height);
-      ex = s.endX*((float)HEIGHT/height);
-      ey = s.endY*((float)HEIGHT/height);
-      out.println(sx+" "+sy+" "+ex+" "+ey);
-    }
-    out.flush();
-    out.close();
-    println("Done!");
-  }
 }
 
 void selectSegment(Segment s){
   if(selectedSegment != null) selectedSegment.selected = false;
-  if(s != null){ 
-    s.selected = true;
-    ledN_slider.setRange(s.ledN-5, s.ledN+5);
-    ledN_slider.setValue(s.ledN);
-  }
+  if(s != null) s.selected = true;
   selectedSegment = s;
   if(selectedSegment != null){ 
     segmentInfo.setVisible(true);
   }
   else segmentInfo.setVisible(false);
-  
 }
