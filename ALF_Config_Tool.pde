@@ -8,7 +8,10 @@ ControlP5 cp5;
 //int editMode = 0;
 static final int GUI_WIDTH = 180;    //Width of GUI bar
 static final int BUTTON_HEIGHT = 20; //Height of GUI buttons
-boolean showMesh = true;
+static final int MESH_WIDTH = 533;
+static final int MESH_HEIGHT = 800;
+
+boolean showMesh = false;
 boolean showSegments = true;
 boolean showLeds = false;
 boolean showNeighbours = true;
@@ -30,7 +33,8 @@ static final float LED_PITCH = 16.6667;  //Pitch between LEDs in mm
 static final int LED_SIZE = 32;          //Size of the light-blob of each LED in pixels
 
 void setup(){
-  size(1400,800, P2D);
+  int w = 2*MESH_WIDTH+GUI_WIDTH+20;
+  size(1266,800, P2D);
   meshBackground = loadImage("ALF_mesh.png");
   meshBackground.resize((int)(meshBackground.width*((float)height/meshBackground.height)), height);
   LED_Sprite = loadImage("Pixel_Sprite.png");
@@ -65,13 +69,13 @@ void setup(){
       
       //Uncomment if we use a file with just one side of edges (this will be mirrored)
       
-      /*Segment sm = new Segment (-coordsPixel[0]+2*600+10,
+      Segment sm = new Segment (-coordsPixel[0]+2*MESH_WIDTH+10,
                                 coordsPixel[1],
-                                -coordsPixel[2]+2*600+10,
+                                -coordsPixel[2]+2*MESH_WIDTH+10,
                                 coordsPixel[3],
                                 0);
       segments.add(sm);
-      sm.autoFindNeighbours();*/
+      sm.autoFindNeighbours();
        
   }
 }
@@ -83,8 +87,8 @@ void draw(){
   
   fill(255);
   textAlign(CENTER);
-  text("Water side", meshBackground.width/2, 20);
-  text("Street side", meshBackground.width*1.5+10, 20);
+  text("Water side", MESH_WIDTH/2, 20);
+  text("Street side", MESH_WIDTH*1.5+10, 20);
   
   //Draw segments & connections to possible neighbours from mouse position
   for(Segment s : segments){

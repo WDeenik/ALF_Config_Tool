@@ -2,9 +2,12 @@
 
 class Segment{
   int startX, startY, endX, endY, ledN;
-  Segment next;
-  Segment[] startNeighbours = new Segment[2];
-  Segment[] endNeighbours = new Segment[2];
+  
+  //The indices of the segments above, these can actually be serialized
+  int n = -1;
+  int[] sni = {-1,-1};
+  int[] eni = {-1,-1};
+  
   LED[] leds;
   boolean selected = false;
   color c;
@@ -44,10 +47,10 @@ class Segment{
     if(selected){ 
       c = color(255,255,0);
       if(showNeighbours){
-        if(startNeighbours[0] != null) startNeighbours[0].setColor(col_nb);
-        if(startNeighbours[1] != null) startNeighbours[1].setColor(col_nb);
-        if(endNeighbours[0] != null) endNeighbours[0].setColor(col_nb);
-        if(endNeighbours[1] != null) endNeighbours[1].setColor(col_nb);
+        if(sni[0] != -1) segments.get(sni[0]).setColor(col_nb);
+        if(sni[1] != -1) segments.get(sni[1]).setColor(col_nb);
+        if(eni[0] != -1) segments.get(eni[0]).setColor(col_nb);
+        if(eni[1] != -1) segments.get(eni[1]).setColor(col_nb);
       }
     }
     else if(mouseHover()) c = col_hov;
@@ -81,13 +84,13 @@ class Segment{
   //Adds a neighbour to the proper place or gives an error message if it is already full
   void addNeighbour(Segment neighbour, int place){
     if(place == 1){
-      if(startNeighbours[0] == null) startNeighbours[0] = neighbour;
-      else if(startNeighbours[1] == null) startNeighbours[1] = neighbour;
+      if(sni[0] == -1) sni[0] = segments.indexOf(neighbour);
+      else if(sni[1] == -1) sni[1] = segments.indexOf(neighbour);
       else println("Segment "+segments.indexOf(this)+" already has two neighbours at its start");
     }
     else{
-      if(endNeighbours[0] == null) endNeighbours[0] = neighbour;
-      else if(endNeighbours[1] == null) endNeighbours[1] = neighbour;
+      if(eni[0] == -1) eni[0] = segments.indexOf(neighbour);
+      else if(eni[1] == -1) eni[1] = segments.indexOf(neighbour);
       else println("Segment "+segments.indexOf(this)+" already has two neighbours at its end");
     }
   }
@@ -118,14 +121,14 @@ class Segment{
     boolean found = false;
     for(int i = 0; i < 4; i++){
       if(i < 2){
-        if(startNeighbours[i] == neighbour){ 
-          startNeighbours[i] = null;
+        if(segments.get(sni[i]) == neighbour){ 
+          sni[i] = -1;
           found = true;
         }
       }
       else{
-        if(endNeighbours[i-2] == neighbour){ 
-          endNeighbours[i-2] = null;
+        if(segments.get(eni[i-2]) == neighbour){ 
+          eni[i-2] = -1;
           found = true;
         }
       }
@@ -137,11 +140,11 @@ class Segment{
   //1 if this is the case for the startPos of this segment, 2 for endPos
   int getPossibleNeighbour(int x, int y){
     if(inRange(x, startX, NEIGHBOUR_DIST) && inRange(y, startY, NEIGHBOUR_DIST)){
-      if(startNeighbours[0] == null || startNeighbours[1] == null) return 1;
+      if(sni[0] == -1 || sni[1] == -1) return 1;
       else return 0;
     }
     if(inRange(x, endX, NEIGHBOUR_DIST) && inRange(y, endY, NEIGHBOUR_DIST)){
-      if(endNeighbours[0] == null || endNeighbours[1] == null) return 2;
+      if(eni[0] == -1 || eni[1] == -1) return 2;
       else return 0;
     }
     return 0;
@@ -185,10 +188,10 @@ class Segment{
     selectedSegment = null;
     for(int i = 0; i<4; i++){
       if(i < 2){
-        if(startNeighbours[i] != null) startNeighbours[i].removeNeighbour(this);
+        if(sni[i] != -1) segments.get(sni[i]).removeNeighbour(this);
       }
       else{
-        if(endNeighbours[i-2] != null) endNeighbours[i-2].removeNeighbour(this);
+        if(eni[i-2] != -1) segments.get(eni[i-2]).removeNeighbour(this);
       }
     }
   }
