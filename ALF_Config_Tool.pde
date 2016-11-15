@@ -1,6 +1,7 @@
 import controlP5.*;
+import java.util.Arrays;
 
-static final int WIDTH = 4500;   //Real life width in mm
+static final int WIDTH = 4000;   //Real life width in mm
 static final int HEIGHT = 6000;  //Real life height in mm
 
 //GUI
@@ -19,13 +20,17 @@ Segment selectedSegment;
 Group segmentInfo;
 Slider ledN_slider;
 
+static final int HISTORY_SIZE = 20;
+ArrayList<JSONObject> stateQueue = new ArrayList<JSONObject>();
+int stateN = 0;
+
 //Mesh
 PImage meshBackground;
 
 //Segments
 static final int NEIGHBOUR_DIST = 2;  //Distance in which segments will auto-detect neighbours
 ArrayList<Segment> segments = new ArrayList<Segment>();
-int startX, startY;
+//int startX, startY;
 
 //LEDs
 PImage LED_Sprite;
@@ -33,7 +38,6 @@ static final float LED_PITCH = 16.6667;  //Pitch between LEDs in mm
 static final int LED_SIZE = 32;          //Size of the light-blob of each LED in pixels
 
 void setup(){
-  int w = 2*MESH_WIDTH+GUI_WIDTH+20;
   size(1266,800, P2D);
   meshBackground = loadImage("ALF_mesh.png");
   meshBackground.resize((int)(meshBackground.width*((float)height/meshBackground.height)), height);
@@ -42,41 +46,60 @@ void setup(){
   
   setupGUI();
   
-  //Read edges from file
-  BufferedReader r = createReader("edges.txt");
-  String line = "";
-  while(true){
-      try {
-        line = r.readLine();
-      } catch (IOException e) {
-        e.printStackTrace();
-        line = null;
-      }
-      if(line == null) break;
-      String[] coords = split(line, ' ');
-      Integer[] coordsPixel = new Integer[4];
-      for(int i = 0; i<4; i++){
-        coordsPixel[i] = round(float(coords[i])/((float)HEIGHT/height));
-      }
-      Segment s = new Segment( coordsPixel[0],
-                               coordsPixel[1],
-                               coordsPixel[2],
-                               coordsPixel[3],
-                               0);
-                               
-      segments.add(s);
-      s.autoFindNeighbours();
-      
-      //Uncomment if we use a file with just one side of edges (this will be mirrored)
-      
-      Segment sm = new Segment (-coordsPixel[0]+2*MESH_WIDTH+10,
-                                coordsPixel[1],
-                                -coordsPixel[2]+2*MESH_WIDTH+10,
-                                coordsPixel[3],
-                                0);
-      segments.add(sm);
-      sm.autoFindNeighbours();
-       
+  //Get mesh from json if it is provided, otherwise build it using edges.txt
+  File json = new File(sketchPath("data/mesh.json"));
+  println(json.getAbsolutePath());
+  if(json.isFile()){
+    /*Gson gson = new Gson();
+    String[] jsonLine = loadStrings(json);
+    Segment[] temp = gson.fromJson(jsonLine[0], Segment[].class);
+    segments = new ArrayList<Segment>(Arrays.asList(temp));
+    for(Segment s : segments) s.json2led();*/
+    
+    JSONObject mesh = loadJSONObject("mesh.json");
+    returnToState(mesh);
+    
+  }
+  else{
+    //Read edges from txt file if JSON file does not exist.
+    BufferedReader r = createReader("edges.txt");
+    String line = "";
+    while(true){
+        try {
+          line = r.readLine();
+        } catch (IOException e) {
+          e.printStackTrace();
+          line = null;
+        }
+        if(line == null) break;
+        String[] coords = split(line, ' ');
+        int[] coordsPixel = new int[4];
+        for(int i = 0; i<4; i++){
+          coordsPixel[i] = round(float(coords[i])/((float)HEIGHT/height));
+        }
+        
+        if(!(coordsPixel[0] == coordsPixel[2] && coordsPixel[1] == coordsPixel[3])){
+          Segment s = new Segment( coordsPixel[0],
+                                 coordsPixel[1],
+                                 coordsPixel[2],
+                                 coordsPixel[3],
+                                 0);
+                                 
+          segments.add(s);
+          s.autoFindNeighbours();                      
+        
+          //Uncomment if we use a file with just one side of edges (this will be mirrored)
+          
+          /*Segment sm = new Segment (-coordsPixel[0]+2*MESH_WIDTH+10,
+                                    coordsPixel[1],
+                                    -coordsPixel[2]+2*MESH_WIDTH+10,
+                                    coordsPixel[3],
+                                    0);
+          segments.add(sm);
+          sm.autoFindNeighbours();*/
+        }
+         
+    }
   }
 }
 
@@ -127,8 +150,8 @@ void keyPressed(){
   if(key == 's'){
     //Save edges to file
     println("Writing edges to file...");
-    PrintWriter out = createWriter("data/edges.txt");
-    for(int i = 0; i<segments.size(); i++){
+    PrintWriter out = createWriter("data/mesh.json");
+    /*for(int i = 0; i<segments.size(); i++){
       Segment s = segments.get(i);
       float sx, sy, ex, ey;
       sx = s.startX*((float)HEIGHT/height);
@@ -136,10 +159,35 @@ void keyPressed(){
       ex = s.endX*((float)HEIGHT/height);
       ey = s.endY*((float)HEIGHT/height);
       out.println(sx+" "+sy+" "+ex+" "+ey);
-    }
+    }*/
+    
+    /*Gson gson = new Gson();
+    for(Segment s : segments) s.led2json();
+    String json;
+    json = gson.toJson(segments);
+    out.print(json);
+    
     out.flush();
-    out.close();
+    out.close();*/
+    
+    JSONObject json = state();
+    saveJSONObject(json, "data/mesh.json");
+    
     println("Done!");
+  }
+  
+  if(key == 'f'){
+    //Flip the current edge
+    if(selectedSegment != null){
+      int tempX, tempY;
+      tempX = selectedSegment.startX;
+      tempY = selectedSegment.startY;
+      selectedSegment.startX = selectedSegment.endX;
+      selectedSegment.startY = selectedSegment.endY;
+      selectedSegment.endX = tempX;
+      selectedSegment.endY = tempY;
+      selectedSegment.updateDistVars();
+    }
   }
 }
 
@@ -156,4 +204,49 @@ void selectSegment(Segment s){
   }
   else segmentInfo.setVisible(false);
   
+}
+
+//Saves state of program in JSON object
+JSONObject state(){
+  JSONObject out = new JSONObject();
+  
+  out.setBoolean("showMesh", showMesh);
+  out.setBoolean("showSegments", showSegments);
+  out.setBoolean("showLeds", showLeds);
+  out.setBoolean("showNeighbours", showNeighbours);
+  
+  JSONArray ss = new JSONArray();
+  for(int i = 0; i<segments.size(); i++){
+    Segment s = segments.get(i);
+    ss.append(s.toJson());
+  }
+  
+  out.setJSONArray("segments", ss);
+  
+  return out;
+}
+
+void returnToState(JSONObject json){
+  showMesh = json.getBoolean("showMesh");
+  showSegments = json.getBoolean("showSegments");
+  showLeds = json.getBoolean("showLeds");
+  showNeighbours = json.getBoolean("showNeighbours");
+  
+  JSONArray ss = json.getJSONArray("segments");
+  for(int i = 0; i < ss.size(); i++){
+    segments.add(new Segment(ss.getJSONObject(i)));
+  }
+}
+
+void addSnapshot(){
+  stateQueue.add(++stateN, state());
+  
+  //If we control-z'd a couple of times and continue, remove all states after the new one
+  if(stateN != stateQueue.size()-1){
+    for(int i = stateN+1; i < stateQueue.size(); i++){
+      stateQueue.remove(i);
+    }
+  }
+  
+  if(stateQueue.size() > HISTORY_SIZE) stateQueue.remove(0);
 }

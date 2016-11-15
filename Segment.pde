@@ -9,6 +9,7 @@ class Segment{
   int[] eni = {-1,-1};
   
   LED[] leds;
+  
   boolean selected = false;
   color c;
   color col_sel = #FFFF00;  //yellow
@@ -36,11 +37,11 @@ class Segment{
     updateLEDs(ledN);
     
     //For calculating distance to this line
-    float dx = endX - startX; 
-    float dy = endY - startY; 
-    d = sqrt( dx*dx + dy*dy ); 
-    ca = dx/d; // cosine
-    sa = dy/d; // sine 
+    updateDistVars();
+  }
+  
+  Segment(JSONObject json){
+    fromJson(json);
   }
   
   void update(){
@@ -194,5 +195,71 @@ class Segment{
         if(eni[i-2] != -1) segments.get(eni[i-2]).removeNeighbour(this);
       }
     }
+  }
+  
+  void updateDistVars(){
+    float dx = endX - startX; 
+    float dy = endY - startY; 
+    d = sqrt( dx*dx + dy*dy ); 
+    ca = dx/d; // cosine
+    sa = dy/d; // sine 
+  }
+  
+  JSONObject toJson(){
+    JSONObject out = new JSONObject();
+    
+    out.setInt("startX", startX);
+    out.setInt("startY", startY);
+    out.setInt("endX", endX);
+    out.setInt("endY", endY);
+    out.setInt("ledN", ledN);
+    out.setInt("n", n);
+    
+    JSONArray t = new JSONArray();
+    t.append(sni[0]);
+    t.append(sni[1]);
+    out.setJSONArray("sni", t);
+    t = new JSONArray();
+    t.append(eni[0]);
+    t.append(eni[1]);
+    out.setJSONArray("eni", t);
+    
+    t = new JSONArray();
+    for(int i = 0; i<leds.length; i++){
+      t.append(leds[i].toJson());
+    }
+    out.setJSONArray("leds", t);
+    
+   // out.setBoolean("selected", selected);
+    out.setInt("c", c);
+    out.setFloat("d", d);
+    out.setFloat("ca", ca);
+    out.setFloat("sa", sa);
+    
+    return out;
+  }
+  
+  void fromJson(JSONObject json){
+    startX = json.getInt("startX");
+    startY = json.getInt("startY");
+    endX = json.getInt("endX");
+    endY = json.getInt("endY");
+    ledN = json.getInt("ledN");
+    
+    n = json.getInt("n");
+    sni = json.getJSONArray("sni").getIntArray();
+    eni = json.getJSONArray("eni").getIntArray();
+    
+    leds = new LED[ledN];
+    JSONArray t = json.getJSONArray("leds");
+    for(int i = 0; i<ledN; i++){
+      leds[i] = new LED(t.getJSONObject(i));
+    }
+    
+  //  selected = json.getBoolean("selected");
+    c = json.getInt("c");
+    d = json.getFloat("d");
+    ca = json.getFloat("ca");
+    sa = json.getFloat("sa");
   }
 }

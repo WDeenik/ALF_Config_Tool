@@ -9,6 +9,10 @@ class LED{
     this.posY = posY;
   }
   
+  LED(JSONObject json){
+    fromJson(json);
+  }
+  
   void draw(){
     imageMode(CENTER);
     tint(c);
@@ -21,5 +25,23 @@ class LED{
   
   void setColor(color c){
     this.c = c;
+  }
+  
+  JSONObject toJson(){
+    JSONObject out = new JSONObject();
+    
+    out.setInt("posX", posX);
+    out.setInt("posY", posY);
+    out.setInt("c", c);
+    
+    return out;
+  }
+  
+  void fromJson(JSONObject json){
+    
+    posX = json.getInt("posX");
+    posY = json.getInt("posY");
+    c = json.getInt("c");
+    
   }
 }
