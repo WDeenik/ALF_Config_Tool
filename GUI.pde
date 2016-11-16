@@ -37,27 +37,46 @@ void setupGUI(){
       .setCaptionLabel("Data Mode");
       
   dataInfo = cp5.addGroup("dataInfo")
-    .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*14)
+    .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*12)
     .hideBar()
     .setVisible(dataMode);
     
+  cp5.addToggle("dataAdd")
+      .setPosition(0, 0)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setCaptionLabel("Modify data points")
+      .setGroup(dataInfo);
+      
+  cp5.addToggle("showData")
+      .setPosition(GUI_WIDTH/2, 0)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setCaptionLabel("Show data chain")
+      .setGroup(dataInfo);
+    
   String[] values = {"0","1","2","3","4","5","6","7"};
   cp5.addScrollableList("teensy_list")
-    .setPosition(0,0)
+    .setPosition(0,BUTTON_HEIGHT*2)
     .setGroup(dataInfo)
     .addItems(values)
     .setCaptionLabel("Teensy")
     .setSize(GUI_WIDTH/2-3, 8*BUTTON_HEIGHT-1)
+    .setValue(selectedTeensy)
     .close()
     ;
     
   cp5.addScrollableList("channel_list")
-    .setPosition(GUI_WIDTH/2,0)
+    .setPosition(GUI_WIDTH/2,BUTTON_HEIGHT*2)
     .setGroup(dataInfo)
     .addItems(values)
     .setCaptionLabel("Channel")
     .setSize(GUI_WIDTH/2-3, 8*BUTTON_HEIGHT-1)
+    .setValue(selectedChannel)
     .close()
+    ;
+    
+  channel_ledN = cp5.addLabel("Channels LED #:")
+    .setPosition(0, 9*BUTTON_HEIGHT)
+    .setGroup(dataInfo)
     ;
       
   segmentInfo = cp5.addGroup("segmentInfo")
@@ -78,6 +97,21 @@ void setupGUI(){
     .setCaptionLabel("LED Number")
     .setTriggerEvent(Slider.RELEASE)
     ;
+    
+  String info = "Info:\n"+
+                "Select by clicking on segments\n"+
+                "DEL: Delete selected segment\n"+
+                "F: Flip selected segment\n"+
+                "S: Save mesh to mesh.json\n"+
+                "Ctrl-Z: Undo\n"+
+                "Ctrl-Y: Redo\n"+
+                " - : Remove last segment from current\n"+
+                "      data chain";
+
+  cp5.addLabel(info)
+    .setPosition(width-GUI_WIDTH,height-BUTTON_HEIGHT*5)
+    ;
+                
 
 }
 
@@ -87,7 +121,7 @@ void setupGUI(){
 }*/
 
 void controlEvent(ControlEvent e){
-  if(frameCount > 0){
+  if(frameCount > 0){ //cp5 triggers everything a couple of times when started
     Controller c = e.getController();
     if (c.getName().equals("ledN")){
       if(selectedSegment != null) selectedSegment.updateLEDs(round(c.getValue()));
@@ -97,5 +131,26 @@ void controlEvent(ControlEvent e){
     if(c.getName().equals("dataMode")){
       dataInfo.setVisible(dataMode);
     }
+    
+    if(c.getName().equals("dataAdd")){
+      if(dataAdd) selectSegment(null);
+    }
+    
+    if(c.getName().equals("teensy_list")){
+      selectedTeensy = (int)c.getValue();
+      updateChannelInfo();
+    }
+    
+    if(c.getName().equals("channel_list")){
+      selectedChannel = (int)c.getValue();
+    }
   }
+}
+
+void updateChannelInfo(){
+  String text = "";
+  for(int i = 0; i < 8; i++){
+    text += "Channel #"+i+": "+teensies[selectedTeensy].LEDCount(i)+"\n";
+  }
+  channel_ledN.setText(text);
 }

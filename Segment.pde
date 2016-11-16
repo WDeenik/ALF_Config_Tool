@@ -4,7 +4,9 @@ class Segment{
   int startX, startY, endX, endY, ledN;
   
   //The indices of the segments above, these can actually be serialized
-  int n = -1;
+  Segment next;
+  int nexti = -1;
+  int connectedChannels = 0;
   Segment[] sn = new Segment[2];
   Segment[] en = new Segment[2];
   
@@ -15,6 +17,8 @@ class Segment{
   
   boolean selected = false;
   color c;
+  color col_con = #660000;  //Dark red for data mode, when segment is connected
+  color col_conErr = #FF00FF; //pink to indicate this segment is connected wrong (more than once or less than zero which should not happen)
   color col_sel = #FFFF00;  //yellow
   color col_nb = #00FFFF;   //cyan
   color col_data = #00FF00; //green
@@ -82,7 +86,12 @@ class Segment{
       }
     }
     
-    c = col_norm;
+    if(dataMode){
+      if(connectedChannels == 0) c = col_norm;
+      else if(connectedChannels == 1) c = col_con;
+      else c = col_conErr;
+    }
+    else c = col_norm;
   }
   
   //Adds a neighbour to the proper place or gives an error message if it is already full
@@ -210,11 +219,13 @@ class Segment{
     sa = dy/d; // sine 
   }
   
-  void updateNeighbours(){
+  //Convert indices to Segments again
+  void updateSegments(){
     for(int i = 0; i<2; i++){
       if(sni[i] != -1) sn[i] = segments.get(sni[i]);
       if(eni[i] != -1) en[i] = segments.get(eni[i]);
     }
+    if(nexti != -1) next = segments.get(nexti);
   }
   
   JSONObject toJson(){
@@ -225,7 +236,8 @@ class Segment{
     out.setInt("endX", endX);
     out.setInt("endY", endY);
     out.setInt("ledN", ledN);
-    out.setInt("n", n);
+    out.setInt("nexti", segments.indexOf(next));
+    out.setInt("connectedChannels", connectedChannels);
     
     JSONArray t = new JSONArray();
     t.append(segments.indexOf(sn[0]));
@@ -235,6 +247,7 @@ class Segment{
     t.append(segments.indexOf(en[0]));
     t.append(segments.indexOf(en[1]));
     out.setJSONArray("eni", t);
+    
     
     t = new JSONArray();
     for(int i = 0; i<leds.length; i++){
@@ -258,7 +271,8 @@ class Segment{
     endY = json.getInt("endY");
     ledN = json.getInt("ledN");
     
-    n = json.getInt("n");
+    nexti = json.getInt("nexti");
+    connectedChannels = json.getInt("connectedChannels");
     sni = json.getJSONArray("sni").getIntArray();
     eni = json.getJSONArray("eni").getIntArray();
     

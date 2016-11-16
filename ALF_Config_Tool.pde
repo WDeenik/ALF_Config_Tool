@@ -17,11 +17,14 @@ boolean showSegments = true;
 boolean showLeds = false;
 boolean showNeighbours = true;
 boolean dataMode = false;
+boolean dataAdd = false;
+boolean showData = true;
 
 Segment selectedSegment;
 Group dataInfo;
 Group segmentInfo;
 Slider ledN_slider;
+Textlabel channel_ledN;
 
 static final int HISTORY_SIZE = 20;
 ArrayList<JSONObject> stateQueue = new ArrayList<JSONObject>();
@@ -38,6 +41,8 @@ ArrayList<Segment> segments = new ArrayList<Segment>();
 //Teensies
 static final int TEENSY_NUMBER = 8;
 Teensy[] teensies = new Teensy[TEENSY_NUMBER];
+int selectedTeensy = -1;
+int selectedChannel = -1;
 
 //LEDs
 PImage LED_Sprite;
@@ -112,6 +117,8 @@ void setup(){
   
   setupGUI();
   
+  println(teensies[0].LEDCount(2));
+  
   addSnapshot(); //Store first state
 }
 
@@ -130,6 +137,11 @@ void draw(){
     s.update();
     s.draw();
   }
+  
+  if(dataMode && selectedTeensy >= 0 && selectedChannel >= 0 && showData){
+    teensies[selectedTeensy].showData(selectedChannel);
+  }
+    
 }
 
 void mousePressed(){
@@ -142,7 +154,8 @@ void mouseReleased(){
     for(Segment s : segments){
       if(s.mouseHover()){
         onSegment = true;
-        selectSegment(s);
+        if(dataAdd) teensies[selectedTeensy].addSegment(selectedChannel, s);
+        else selectSegment(s);
       }
     }
     if(!onSegment){ 
@@ -158,6 +171,10 @@ void keyPressed(KeyEvent e){
       selectedSegment = null;
       addSnapshot();
     }
+  }
+  
+  if(key == '-'){
+    if(dataAdd) teensies[selectedTeensy].removeSegment(selectedChannel);
   }
   
   if(key == 's'){
@@ -237,6 +254,8 @@ JSONObject state(){
   out.setBoolean("showLeds", showLeds);
   out.setBoolean("showNeighbours", showNeighbours);
   out.setBoolean("dataMode", dataMode);
+  out.setInt("selectedTeensy", selectedTeensy);
+  out.setInt("selectedChannel", selectedChannel);
   
   JSONArray ss = new JSONArray();
   for(int i = 0; i<segments.size(); i++){
@@ -260,13 +279,15 @@ void returnToState(JSONObject json){
   showLeds = json.getBoolean("showLeds");
   showNeighbours = json.getBoolean("showNeighbours");
   dataMode = json.getBoolean("dataMode");
+  selectedTeensy = json.getInt("selectedTeensy");
+  selectedChannel = json.getInt("selectedChannel");
   
   JSONArray ss = json.getJSONArray("segments");
   segments = new ArrayList<Segment>();
   for(int i = 0; i < ss.size(); i++){
     segments.add(new Segment(ss.getJSONObject(i)));
   }
-  for(Segment s : segments) s.updateNeighbours();
+  for(Segment s : segments) s.updateSegments();
   
   JSONArray ts = json.getJSONArray("teensies");
   for(int i = 0; i < teensies.length; i++){
@@ -276,9 +297,7 @@ void returnToState(JSONObject json){
 
 void addSnapshot(){
   if(stateN < HISTORY_SIZE-1) stateN++;
-  println(stateN);
   stateQueue.add(stateN, state());
-  println(stateQueue.size());
   
   //If we control-z'd a couple of times and continue, remove all states after the new one
   
