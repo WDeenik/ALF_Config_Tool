@@ -5,6 +5,9 @@ class Segment{
   
   //The indices of the segments above, these can actually be serialized
   int n = -1;
+  Segment[] sn = new Segment[2];
+  Segment[] en = new Segment[2];
+  
   int[] sni = {-1,-1};
   int[] eni = {-1,-1};
   
@@ -47,11 +50,11 @@ class Segment{
   void update(){
     if(selected){ 
       c = color(255,255,0);
-      if(showNeighbours){
-        if(sni[0] != -1) segments.get(sni[0]).setColor(col_nb);
-        if(sni[1] != -1) segments.get(sni[1]).setColor(col_nb);
-        if(eni[0] != -1) segments.get(eni[0]).setColor(col_nb);
-        if(eni[1] != -1) segments.get(eni[1]).setColor(col_nb);
+      if(showNeighbours && !dataMode){
+        if(sn[0] != null) sn[0].setColor(col_nb);
+        if(sn[1] != null) sn[1].setColor(col_nb);
+        if(en[0] != null) en[0].setColor(col_nb);
+        if(en[1] != null) en[1].setColor(col_nb);
       }
     }
     else if(mouseHover()) c = col_hov;
@@ -85,13 +88,13 @@ class Segment{
   //Adds a neighbour to the proper place or gives an error message if it is already full
   void addNeighbour(Segment neighbour, int place){
     if(place == 1){
-      if(sni[0] == -1) sni[0] = segments.indexOf(neighbour);
-      else if(sni[1] == -1) sni[1] = segments.indexOf(neighbour);
+      if(sn[0] == null) sn[0] = neighbour;
+      else if(sn[1] == null) sn[1] = neighbour;
       else println("Segment "+segments.indexOf(this)+" already has two neighbours at its start");
     }
     else{
-      if(eni[0] == -1) eni[0] = segments.indexOf(neighbour);
-      else if(eni[1] == -1) eni[1] = segments.indexOf(neighbour);
+      if(en[0] == null) en[0] = neighbour;
+      else if(en[1] == null) en[1] = neighbour;
       else println("Segment "+segments.indexOf(this)+" already has two neighbours at its end");
     }
   }
@@ -122,14 +125,16 @@ class Segment{
     boolean found = false;
     for(int i = 0; i < 4; i++){
       if(i < 2){
-        if(segments.get(sni[i]) == neighbour){ 
-          sni[i] = -1;
+        if(sn[i] == neighbour){ 
+          sn[i] = null;
+          neighbour.removeNeighbour(this);
           found = true;
         }
       }
       else{
-        if(segments.get(eni[i-2]) == neighbour){ 
-          eni[i-2] = -1;
+        if(en[i-2] == neighbour){ 
+          en[i-2] = null;
+          neighbour.removeNeighbour(this);
           found = true;
         }
       }
@@ -141,11 +146,11 @@ class Segment{
   //1 if this is the case for the startPos of this segment, 2 for endPos
   int getPossibleNeighbour(int x, int y){
     if(inRange(x, startX, NEIGHBOUR_DIST) && inRange(y, startY, NEIGHBOUR_DIST)){
-      if(sni[0] == -1 || sni[1] == -1) return 1;
+      if(sn[0] == null || sn[1] == null) return 1;
       else return 0;
     }
     if(inRange(x, endX, NEIGHBOUR_DIST) && inRange(y, endY, NEIGHBOUR_DIST)){
-      if(eni[0] == -1 || eni[1] == -1) return 2;
+      if(en[0] == null || en[1] == null) return 2;
       else return 0;
     }
     return 0;
@@ -189,10 +194,10 @@ class Segment{
     selectedSegment = null;
     for(int i = 0; i<4; i++){
       if(i < 2){
-        if(sni[i] != -1) segments.get(sni[i]).removeNeighbour(this);
+        if(sn[i] != null) sn[i].removeNeighbour(this);
       }
       else{
-        if(eni[i-2] != -1) segments.get(eni[i-2]).removeNeighbour(this);
+        if(en[i-2] != null) en[i-2].removeNeighbour(this);
       }
     }
   }
@@ -203,6 +208,13 @@ class Segment{
     d = sqrt( dx*dx + dy*dy ); 
     ca = dx/d; // cosine
     sa = dy/d; // sine 
+  }
+  
+  void updateNeighbours(){
+    for(int i = 0; i<2; i++){
+      if(sni[i] != -1) sn[i] = segments.get(sni[i]);
+      if(eni[i] != -1) en[i] = segments.get(eni[i]);
+    }
   }
   
   JSONObject toJson(){
@@ -216,12 +228,12 @@ class Segment{
     out.setInt("n", n);
     
     JSONArray t = new JSONArray();
-    t.append(sni[0]);
-    t.append(sni[1]);
+    t.append(segments.indexOf(sn[0]));
+    t.append(segments.indexOf(sn[1]));
     out.setJSONArray("sni", t);
     t = new JSONArray();
-    t.append(eni[0]);
-    t.append(eni[1]);
+    t.append(segments.indexOf(en[0]));
+    t.append(segments.indexOf(en[1]));
     out.setJSONArray("eni", t);
     
     t = new JSONArray();

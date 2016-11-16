@@ -16,13 +16,16 @@ boolean showMesh = false;
 boolean showSegments = true;
 boolean showLeds = false;
 boolean showNeighbours = true;
+boolean dataMode = false;
+
 Segment selectedSegment;
+Group dataInfo;
 Group segmentInfo;
 Slider ledN_slider;
 
 static final int HISTORY_SIZE = 20;
 ArrayList<JSONObject> stateQueue = new ArrayList<JSONObject>();
-int stateN = 0;
+int stateN = -1;
 
 //Mesh
 PImage meshBackground;
@@ -31,6 +34,10 @@ PImage meshBackground;
 static final int NEIGHBOUR_DIST = 2;  //Distance in which segments will auto-detect neighbours
 ArrayList<Segment> segments = new ArrayList<Segment>();
 //int startX, startY;
+
+//Teensies
+static final int TEENSY_NUMBER = 8;
+Teensy[] teensies = new Teensy[TEENSY_NUMBER];
 
 //LEDs
 PImage LED_Sprite;
@@ -43,8 +50,6 @@ void setup(){
   meshBackground.resize((int)(meshBackground.width*((float)height/meshBackground.height)), height);
   LED_Sprite = loadImage("Pixel_Sprite.png");
   LED_Sprite.resize(LED_SIZE, LED_SIZE);
-  
-  setupGUI();
   
   //Get mesh from json if it is provided, otherwise build it using edges.txt
   File json = new File(sketchPath("data/mesh.json"));
@@ -64,6 +69,9 @@ void setup(){
     //Read edges from txt file if JSON file does not exist.
     BufferedReader r = createReader("edges.txt");
     String line = "";
+    for(int i = 0; i < TEENSY_NUMBER; i++){
+      teensies[i] = new Teensy();
+    }
     while(true){
         try {
           line = r.readLine();
@@ -101,6 +109,10 @@ void setup(){
          
     }
   }
+  
+  setupGUI();
+  
+  addSnapshot(); //Store first state
 }
 
 void draw(){
@@ -139,11 +151,12 @@ void mouseReleased(){
   }
 }
 
-void keyPressed(){
+void keyPressed(KeyEvent e){
   if(key == 127){ //127 is ASCII DELETE
     if(selectedSegment != null){
       selectedSegment.delete();
       selectedSegment = null;
+      addSnapshot();
     }
   }
   
@@ -187,7 +200,16 @@ void keyPressed(){
       selectedSegment.endX = tempX;
       selectedSegment.endY = tempY;
       selectedSegment.updateDistVars();
+      addSnapshot();
     }
+  }
+  
+  if(key == 0x1A){ //Somehow key == 0x1A when CTRL-Z is pressed
+    if(stateN > 0) returnToState(stateQueue.get(--stateN));
+  }
+  
+  if(key == 0x19){ //CTRL-Y
+    if(stateN < stateQueue.size()-1) returnToState(stateQueue.get(++stateN));
   }
 }
 
@@ -214,14 +236,20 @@ JSONObject state(){
   out.setBoolean("showSegments", showSegments);
   out.setBoolean("showLeds", showLeds);
   out.setBoolean("showNeighbours", showNeighbours);
+  out.setBoolean("dataMode", dataMode);
   
   JSONArray ss = new JSONArray();
   for(int i = 0; i<segments.size(); i++){
     Segment s = segments.get(i);
     ss.append(s.toJson());
-  }
-  
+  }  
   out.setJSONArray("segments", ss);
+  
+  JSONArray ts = new JSONArray();
+  for(int i = 0; i<teensies.length; i++){
+    ts.append(teensies[i].toJson());
+  }
+  out.setJSONArray("teensies", ts);
   
   return out;
 }
@@ -231,22 +259,35 @@ void returnToState(JSONObject json){
   showSegments = json.getBoolean("showSegments");
   showLeds = json.getBoolean("showLeds");
   showNeighbours = json.getBoolean("showNeighbours");
+  dataMode = json.getBoolean("dataMode");
   
   JSONArray ss = json.getJSONArray("segments");
+  segments = new ArrayList<Segment>();
   for(int i = 0; i < ss.size(); i++){
     segments.add(new Segment(ss.getJSONObject(i)));
   }
+  for(Segment s : segments) s.updateNeighbours();
+  
+  JSONArray ts = json.getJSONArray("teensies");
+  for(int i = 0; i < teensies.length; i++){
+    teensies[i] = new Teensy(ts.getJSONObject(i));
+  }  
 }
 
 void addSnapshot(){
-  stateQueue.add(++stateN, state());
+  if(stateN < HISTORY_SIZE-1) stateN++;
+  println(stateN);
+  stateQueue.add(stateN, state());
+  println(stateQueue.size());
   
   //If we control-z'd a couple of times and continue, remove all states after the new one
+  
+  if(stateQueue.size() > HISTORY_SIZE) stateQueue.remove(0);
+  
   if(stateN != stateQueue.size()-1){
     for(int i = stateN+1; i < stateQueue.size(); i++){
       stateQueue.remove(i);
     }
   }
   
-  if(stateQueue.size() > HISTORY_SIZE) stateQueue.remove(0);
 }
