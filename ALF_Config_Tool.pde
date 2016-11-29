@@ -1,5 +1,6 @@
 import controlP5.*;
 import java.util.Arrays;
+import processing.pdf.*;
 
 static final int WIDTH = 4000;   //Real life width in mm
 static final int HEIGHT = 6000;  //Real life height in mm
@@ -19,6 +20,10 @@ boolean showNeighbours = true;
 boolean dataMode = false;
 boolean dataAdd = false;
 boolean showData = true;
+boolean showOrientation = true;
+boolean pdfExport = false;
+boolean dataDir = false;
+boolean checkLeds = false;
 
 Segment selectedSegment;
 Group dataInfo;
@@ -41,8 +46,8 @@ ArrayList<Segment> segments = new ArrayList<Segment>();
 //Teensies
 static final int TEENSY_NUMBER = 8;
 Teensy[] teensies = new Teensy[TEENSY_NUMBER];
-int selectedTeensy = -1;
-int selectedChannel = -1;
+int selectedTeensy = 0;
+int selectedChannel = 0;
 
 //LEDs
 PImage LED_Sprite;
@@ -72,7 +77,7 @@ void setup(){
   }
   else{
     //Read edges from txt file if JSON file does not exist.
-    BufferedReader r = createReader("edges.txt");
+    BufferedReader r = createReader("waterSide.txt");
     String line = "";
     for(int i = 0; i < TEENSY_NUMBER; i++){
       teensies[i] = new Teensy();
@@ -113,9 +118,43 @@ void setup(){
         }
          
     }
+
+    r = createReader("streetSide.txt");
+    line = "";
+    for(int i = 0; i < TEENSY_NUMBER; i++){
+      teensies[i] = new Teensy();
+    }
+    while(true){
+        try {
+          line = r.readLine();
+        } catch (IOException e) {
+          e.printStackTrace();
+          line = null;
+        }
+        if(line == null) break;
+        String[] coords = split(line, ' ');
+        int[] coordsPixel = new int[4];
+        for(int i = 0; i<4; i++){
+          coordsPixel[i] = round(float(coords[i])/((float)HEIGHT/height));
+        }
+        
+        if(!(coordsPixel[0] == coordsPixel[2] && coordsPixel[1] == coordsPixel[3])){
+          Segment s = new Segment (-coordsPixel[0]+2*MESH_WIDTH+10,
+                                    coordsPixel[1],
+                                    -coordsPixel[2]+2*MESH_WIDTH+10,
+                                    coordsPixel[3],
+                                    0);
+                                 
+          segments.add(s);
+          s.autoFindNeighbours();                      
+        }
+         
+    }
   }
   
   setupGUI();
+  
+  println(segments.size());
   
   println(teensies[0].LEDCount(2));
   
@@ -123,6 +162,8 @@ void setup(){
 }
 
 void draw(){
+  if(pdfExport) beginRecord(PDF, "export.pdf");
+  
   background(0);
   
   if(showMesh) drawMesh();
@@ -132,6 +173,22 @@ void draw(){
   text("Water side", MESH_WIDTH/2, 20);
   text("Street side", MESH_WIDTH*1.5+10, 20);
   
+  //Draw edges of plates
+  stroke(86);
+  line(0,0,0,800);
+  line(0,800,533,800);
+  line(533,800,533,0);
+  line(0,0,533,0);
+  line(0,400,533,400);
+  line(267,0,267,800);
+  line(MESH_WIDTH+10,0,MESH_WIDTH+10,600);
+  line(MESH_WIDTH+10,600,2*MESH_WIDTH+10, 600);
+  line(2*MESH_WIDTH+10,600,2*MESH_WIDTH+10,0);
+  line(MESH_WIDTH+10, 0, 2*MESH_WIDTH+10, 0);
+  line(1.5*MESH_WIDTH+10, 0, 1.5*MESH_WIDTH+10, 600);
+  line(MESH_WIDTH+10, 400, 2*MESH_WIDTH+10, 400);
+  //line(0,800-66,MESH_WIDTH,800-66);
+  
   //Draw segments & connections to possible neighbours from mouse position
   for(Segment s : segments){
     s.update();
@@ -140,6 +197,16 @@ void draw(){
   
   if(dataMode && selectedTeensy >= 0 && selectedChannel >= 0 && showData){
     teensies[selectedTeensy].showData(selectedChannel);
+  }
+  if(dataDir){
+    for(Teensy t : teensies){
+      t.showDataDirection();
+    }
+  }
+  
+  if(pdfExport){
+    endRecord();
+    pdfExport = false;
   }
     
 }
@@ -154,8 +221,14 @@ void mouseReleased(){
     for(Segment s : segments){
       if(s.mouseHover()){
         onSegment = true;
-        if(dataAdd) teensies[selectedTeensy].addSegment(selectedChannel, s);
-        else selectSegment(s);
+        if(dataAdd){ 
+          teensies[selectedTeensy].addSegment(selectedChannel, s);
+          break;
+        }
+        else{ 
+          selectSegment(s);
+          break;
+        }
       }
     }
     if(!onSegment){ 
@@ -175,6 +248,10 @@ void keyPressed(KeyEvent e){
   
   if(key == '-'){
     if(dataAdd) teensies[selectedTeensy].removeSegment(selectedChannel);
+  }
+  
+  if(key == 'e'){
+    pdfExport = true;
   }
   
   if(key == 's'){
@@ -209,14 +286,7 @@ void keyPressed(KeyEvent e){
   if(key == 'f'){
     //Flip the current edge
     if(selectedSegment != null){
-      int tempX, tempY;
-      tempX = selectedSegment.startX;
-      tempY = selectedSegment.startY;
-      selectedSegment.startX = selectedSegment.endX;
-      selectedSegment.startY = selectedSegment.endY;
-      selectedSegment.endX = tempX;
-      selectedSegment.endY = tempY;
-      selectedSegment.updateDistVars();
+      selectedSegment.flip();
       addSnapshot();
     }
   }
@@ -256,6 +326,7 @@ JSONObject state(){
   out.setBoolean("dataMode", dataMode);
   out.setInt("selectedTeensy", selectedTeensy);
   out.setInt("selectedChannel", selectedChannel);
+  out.setBoolean("showOrientation", showOrientation);
   
   JSONArray ss = new JSONArray();
   for(int i = 0; i<segments.size(); i++){
@@ -281,18 +352,34 @@ void returnToState(JSONObject json){
   dataMode = json.getBoolean("dataMode");
   selectedTeensy = json.getInt("selectedTeensy");
   selectedChannel = json.getInt("selectedChannel");
+  //showOrientation = json.getBoolean("showOrientation");
   
   JSONArray ss = json.getJSONArray("segments");
   segments = new ArrayList<Segment>();
   for(int i = 0; i < ss.size(); i++){
     segments.add(new Segment(ss.getJSONObject(i)));
   }
-  for(Segment s : segments) s.updateSegments();
+  
+  ArrayList<Segment> rem = new ArrayList<Segment>();
+  for(Segment s : segments){ 
+    s.updateSegments();
+  }  
   
   JSONArray ts = json.getJSONArray("teensies");
   for(int i = 0; i < teensies.length; i++){
     teensies[i] = new Teensy(ts.getJSONObject(i));
   }  
+  
+  int ledNumber = 0;
+  for(Segment s : segments){ 
+    if(s.ledN < 2)  rem.add(s);
+    else ledNumber += s.ledN;
+  }  
+  for(Segment s : rem) segments.remove(s);
+  
+  println(ledNumber);
+  
+  
 }
 
 void addSnapshot(){

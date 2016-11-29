@@ -31,31 +31,42 @@ void setupGUI(){
       .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
       .setCaptionLabel("Show Neighbours");
       
+  cp5.addToggle("checkLeds")
+      .setPosition(width-GUI_WIDTH/2, BUTTON_HEIGHT*6)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setCaptionLabel("Check LED #");
+      
   cp5.addToggle("dataMode")
       .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*8)
       .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
       .setCaptionLabel("Data Mode");
       
   dataInfo = cp5.addGroup("dataInfo")
-    .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*12)
+    .setPosition(width-GUI_WIDTH, BUTTON_HEIGHT*10)
     .hideBar()
     .setVisible(dataMode);
     
+  cp5.addToggle("dataDir")
+      .setPosition(0,0)
+      .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
+      .setCaptionLabel("Show data direction")
+      .setGroup(dataInfo);
+    
   cp5.addToggle("dataAdd")
-      .setPosition(0, 0)
+      .setPosition(0, BUTTON_HEIGHT*2)
       .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
       .setCaptionLabel("Modify data points")
       .setGroup(dataInfo);
       
   cp5.addToggle("showData")
-      .setPosition(GUI_WIDTH/2, 0)
+      .setPosition(GUI_WIDTH/2, BUTTON_HEIGHT*2)
       .setSize(GUI_WIDTH/2-3, BUTTON_HEIGHT-1)
       .setCaptionLabel("Show data chain")
       .setGroup(dataInfo);
     
   String[] values = {"0","1","2","3","4","5","6","7"};
   cp5.addScrollableList("teensy_list")
-    .setPosition(0,BUTTON_HEIGHT*2)
+    .setPosition(0,BUTTON_HEIGHT*4)
     .setGroup(dataInfo)
     .addItems(values)
     .setCaptionLabel("Teensy")
@@ -65,7 +76,7 @@ void setupGUI(){
     ;
     
   cp5.addScrollableList("channel_list")
-    .setPosition(GUI_WIDTH/2,BUTTON_HEIGHT*2)
+    .setPosition(GUI_WIDTH/2,BUTTON_HEIGHT*4)
     .setGroup(dataInfo)
     .addItems(values)
     .setCaptionLabel("Channel")
@@ -75,7 +86,7 @@ void setupGUI(){
     ;
     
   channel_ledN = cp5.addLabel("Channels LED #:")
-    .setPosition(0, 9*BUTTON_HEIGHT)
+    .setPosition(0, 11*BUTTON_HEIGHT)
     .setGroup(dataInfo)
     ;
       
@@ -125,6 +136,7 @@ void controlEvent(ControlEvent e){
     Controller c = e.getController();
     if (c.getName().equals("ledN")){
       if(selectedSegment != null) selectedSegment.updateLEDs(round(c.getValue()));
+      selectedSegment.checkedLedN = true;
       addSnapshot();
     }
     

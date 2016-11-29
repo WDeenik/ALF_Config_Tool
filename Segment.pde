@@ -3,6 +3,8 @@
 class Segment{
   int startX, startY, endX, endY, ledN;
   
+  boolean checkedLedN = false;
+  
   //The indices of the segments above, these can actually be serialized
   Segment next;
   int nexti = -1;
@@ -69,6 +71,18 @@ class Segment{
       stroke(c);
       strokeWeight(2);
       line(startX,startY,endX,endY);
+      
+      if(showOrientation){
+        noFill();
+        strokeWeight(1);
+        int mx = startX+(endX-startX)/2;  //Middle point of segment
+        int my = startY+(endY-startY)/2;
+        pushMatrix();
+        translate(mx, my);
+        rotate(atan2(endY-startY, endX-startX));
+        triangle(2, 0, -4, 3, -4, -3);
+        popMatrix(); 
+      }
     }
     
     //Show start/end position if selected
@@ -91,7 +105,13 @@ class Segment{
       else if(connectedChannels == 1) c = col_con;
       else c = col_conErr;
     }
-    else c = col_norm;
+    else{ 
+      if(!checkLeds) c = col_norm;
+      else{
+        if(checkedLedN) c = col_norm;
+        else c = col_conErr;
+      }
+    }
   }
   
   //Adds a neighbour to the proper place or gives an error message if it is already full
@@ -148,7 +168,7 @@ class Segment{
         }
       }
     }
-    if(!found) println("Cannot delete neighbour, not found");
+    //if(!found) println("Cannot delete neighbour, not found");
   }
   
   //Returns if a potential start/end position can be a neighbour of this segment
@@ -163,6 +183,16 @@ class Segment{
       else return 0;
     }
     return 0;
+  }
+  
+  void flip(){
+    int tempX = startX;
+    int tempY = startY;
+    startX = endX;
+    startY = endY;
+    endX = tempX;
+    endY = tempY;
+    updateDistVars();
   }
   
   private boolean inRange(int x1, int x2, int range){
@@ -238,6 +268,8 @@ class Segment{
     out.setInt("ledN", ledN);
     out.setInt("nexti", segments.indexOf(next));
     out.setInt("connectedChannels", connectedChannels);
+    out.setInt("col_con", col_con);
+    out.setBoolean("checkedLedN", checkedLedN);
     
     JSONArray t = new JSONArray();
     t.append(segments.indexOf(sn[0]));
@@ -247,6 +279,7 @@ class Segment{
     t.append(segments.indexOf(en[0]));
     t.append(segments.indexOf(en[1]));
     out.setJSONArray("eni", t);
+    
     
     
     t = new JSONArray();
@@ -270,6 +303,8 @@ class Segment{
     endX = json.getInt("endX");
     endY = json.getInt("endY");
     ledN = json.getInt("ledN");
+    col_con = json.getInt("col_con");
+    checkedLedN = json.getBoolean("checkedLedN");
     
     nexti = json.getInt("nexti");
     connectedChannels = json.getInt("connectedChannels");

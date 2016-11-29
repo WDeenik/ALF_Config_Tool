@@ -1,6 +1,8 @@
 class Teensy{
   Segment channel[] = new Segment[8];
   
+  color[] connColors = {#660000, #006666, #664D00, #001A66, #336600, #330066, #00661A, #66004D};
+  
   Teensy(){
   }
   
@@ -22,15 +24,32 @@ class Teensy{
       s.setColor(#00FF00);
       mx1 = s.startX+(s.endX-s.startX)/2;  //Middle point of segment
       my1 = s.startY+(s.endY-s.startY)/2;
+      drawDataArrows(c, true);
+      
+    }
+  }
+  
+  void showDataDirection(){
+    for(int i = 0; i < 8; i++){
+      drawDataArrows(i, false);
+    }
+  }
+  
+  void drawDataArrows(int c, boolean sel){
+    Segment s = channel[c];
+    if(s != null){
+      int mx1 = s.startX+(s.endX-s.startX)/2;  //Middle point of segment
+      int my1 = s.startY+(s.endY-s.startY)/2;
+      int mx2,my2;
       while(s.next != null){
-        //Draw arrow from this segment to next one
-        s = s.next;
-        mx2 = s.startX+(s.endX-s.startX)/2;
-        my2 = s.startY+(s.endY-s.startY)/2;
-        drawArrow(mx1,my1,mx2,my2);
-        mx1 = mx2;
-        my1 = my2;
-        s.setColor(#00FFFF);
+          //Draw arrow from this segment to next one
+          s = s.next;
+          mx2 = s.startX+(s.endX-s.startX)/2;
+          my2 = s.startY+(s.endY-s.startY)/2;
+          drawArrow(mx1,my1,mx2,my2);
+          mx1 = mx2;
+          my1 = my2;
+          if(sel) s.setColor(#00FFFF);
       }
     }
   }
@@ -46,7 +65,7 @@ class Teensy{
     pushMatrix();
       translate(x2, y2);
       rotate(atan2(y2-y1, x2-x1));
-      triangle(0, 0, -5, 3, -5, -3);
+      triangle(0, 0, -3, 1, -3, -1);
     popMatrix(); 
 
   }
@@ -54,12 +73,21 @@ class Teensy{
   void addSegment(int c, Segment newS){
     Segment s = channel[c];
     if(s != null){
-      while(s.next != null) s = s.next;
+      while(s.next != null){ 
+        if(s == newS) return;
+        s = s.next;
+      }
       s.next = newS;
+      if(dist(s.endX, s.endY, newS.startX, newS.startY) > dist(s.endX, s.endY, newS.endX, newS.endY)){
+        newS.flip();
+      }
     }
-    else channel[c] = newS;
+    else{ 
+      channel[c] = newS;
+    }
     
     newS.connectedChannels++;
+    newS.col_con = connColors[c];
     
     updateChannelInfo();
     addSnapshot();
@@ -73,7 +101,8 @@ class Teensy{
         prevS = s;
         s = s.next;
       }
-      prevS.next = null;
+      if(prevS == s) channel[c] = null;
+      else prevS.next = null;
       s.connectedChannels--;
     }
     updateChannelInfo();
