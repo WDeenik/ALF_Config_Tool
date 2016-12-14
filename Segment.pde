@@ -261,9 +261,12 @@ class Segment{
   JSONObject toJson(){
     JSONObject out = new JSONObject();
     
-    out.setInt("startX", startX);
+    
+    if(startX < 536) out.setInt("startX", startX);
+    else out.setInt("startX", startX+170);
     out.setInt("startY", startY);
-    out.setInt("endX", endX);
+    if(endX < 536) out.setInt("endX", endX);
+    else out.setInt("endX", endX+170);
     out.setInt("endY", endY);
     out.setInt("ledN", ledN);
     out.setInt("nexti", segments.indexOf(next));
@@ -298,9 +301,11 @@ class Segment{
   }
   
   void fromJson(JSONObject json){
-    startX = json.getInt("startX");
+    if(json.getInt("startX") < 706) startX = json.getInt("startX");
+    else startX = json.getInt("startX")-170;
     startY = json.getInt("startY");
-    endX = json.getInt("endX");
+    if(json.getInt("endX") < 706) endX = json.getInt("endX");
+    else endX = json.getInt("endX")-170;
     endY = json.getInt("endY");
     ledN = json.getInt("ledN");
     col_con = json.getInt("col_con");
