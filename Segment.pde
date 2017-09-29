@@ -1,5 +1,20 @@
 //Contains variables & methods for each segment of LEDs
 
+Segment closestSegment(int x, int y){
+  float dist = 1000000;
+  Segment closest = segments.get(0);
+  for(Segment s : segments){
+    if(s.startX != s.endX && s.startY != s.endY){
+      float d = s.getDistance(x,y);
+      if(d < dist){ 
+        dist = d;
+        closest = s;
+      }
+    }
+  }
+  return closest;
+}
+
 class Segment{
   int startX, startY, endX, endY, ledN;
   

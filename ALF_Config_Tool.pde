@@ -56,6 +56,7 @@ static final int LED_SIZE = 32;          //Size of the light-blob of each LED in
 
 void setup(){
   size(1266,800, P2D);
+  
   meshBackground = loadImage("ALF_mesh.png");
   meshBackground.resize((int)(meshBackground.width*((float)height/meshBackground.height)), height);
   LED_Sprite = loadImage("Pixel_Sprite.png");
@@ -159,9 +160,14 @@ void setup(){
   println(teensies[0].LEDCount(2));
   
   addSnapshot(); //Store first state
+  
+  convertToTeensyCode(4);
 }
 
 void draw(){
+  
+  println(segments.indexOf(closestSegment(mouseX,mouseY)));
+  
   if(pdfExport) beginRecord(PDF, "export.pdf");
   
   background(0);

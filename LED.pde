@@ -32,8 +32,7 @@ class LED{
     
     if(posX < 536) out.setInt("posX", posX);
     else out.setInt("posX", posX+170);
-    if(posY < 536) out.setInt("posY", posY);
-    else out.setInt("posY", posY+170);
+    out.setInt("posY", posY);
     out.setInt("c", c);
     
     return out;
@@ -43,8 +42,7 @@ class LED{
     
     if(json.getInt("posX") < 536) posX = json.getInt("posX");
     else posX = json.getInt("posX")-170;
-    if(json.getInt("posY") < 536) posY = json.getInt("posY");
-    else posY = json.getInt("posY")-170;
+    posY = json.getInt("posY");
     c = json.getInt("c");
     
   }
